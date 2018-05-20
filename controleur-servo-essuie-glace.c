@@ -1,10 +1,10 @@
 /* 
  * Gère la position d'un servomoteur comme si il s'agissait d'un
- * essuie glaces.
+ * essuie glace.
  * 
  * INT1: Allume l'essuie-glaces, puis active/désactive le balayage rapide.
  * INT2: Lance 1 balayage, ou arrête l'essuie-glaces.
- * L'essuie-glaces s'arrête toujours au point de repos.
+ * L'essuie-glace s'arrête toujours au point de repos.
  * 
  * Le signal de contrôle des servomoteurs est difficile à générer, 
  * car il consiste en une pulsation étroite et d'une durée très précise, 
@@ -164,7 +164,7 @@ void SERVO_machine(enum Evenements e) {
     signed char position;
 
     switch(etat) {
-        // L'essuie-glaces est à l'arrêt:
+        // L'essuie-glace est à l'arrêt:
         case ARRET:
             switch(e) {
                 case EINT0:
@@ -312,7 +312,7 @@ void main() {
     // Initialise les interruptions et les périphériques:
     initialiseHardware();
 
-    // Initialise le servomoteur au point central:
+    // Initialise le servomoteur au point d'arrêt:
     SERVO_place(SERVO_MIN);
 
     // Les interruptions font tout le travail:
