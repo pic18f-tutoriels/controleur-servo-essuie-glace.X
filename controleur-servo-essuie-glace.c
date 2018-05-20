@@ -27,9 +27,6 @@
 #pragma config WDTEN = OFF     // Watchdog inactif.
 #pragma config LVP = OFF       // Single Supply Enable bits off.
 
-//#define VERSION_1
-#define VERSION_2
-
 /**
  * Les 2 bits moins signifiants du rapport cyclique.
  * Sont copiés dans CCP5CON.DC5B
