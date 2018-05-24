@@ -106,8 +106,9 @@ void SERVO_place(signed char position) {
  * @return La position du servomoteur.
  */
 signed char SERVO_deplace(signed char deplacement) {
+   signed char position;
 
-    // Déplace le servomoteur:
+   // Déplace le servomoteur:
    SERVO_position += deplacement;
 
    // Vérifie le dépassement:
@@ -117,12 +118,13 @@ signed char SERVO_deplace(signed char deplacement) {
    if (SERVO_position < SERVO_MIN) {
        SERVO_position = SERVO_MIN;
    }
+   position = (signed char) SERVO_position;
 
    // Configure le PWM:
-   PWM_configure((signed char) SERVO_position);
+   PWM_configure(position);
 
    // Indique la position du servomoteur.
-   return SERVO_position;
+   return position;
 }
 
 /**
@@ -143,37 +145,37 @@ enum Etats etat = REPOS;
  * Événements pour la machine à états.
  */
 enum Evenements {
-    STOP,
-    START,
-    TICTAC
+    E_STOP,
+    E_START,
+    E_TICTAC
 };
 
-#define BALAYAGE_LENT 5
-#define BALAYAGE_RAPIDE 2
+#define BALAYAGE_LENT 2
+#define BALAYAGE_RAPIDE 3
+
 /**
  * Machine à états.
  * @param e événement à traiter.
  */
 void SERVO_machine(enum Evenements e) {
-    static unsigned char attente;
-    static unsigned char retardement;
     static signed char sens = 1;
+    static signed char balayage = BALAYAGE_LENT;
     signed char position;
 
     switch(etat) {
         // L'essuie-glace est à l'arrêt:
         case REPOS:
             switch(e) {
-                case STOP:
-                    retardement = BALAYAGE_LENT;
+                case E_STOP:
                     sens = 1;
                     etat = BALAYAGE_1X;
+                    balayage = BALAYAGE_LENT;
                     break;
 
-                case START:
-                    retardement = BALAYAGE_LENT;
+                case E_START:
                     sens = 1;
                     etat = BALAYAGE;
+                    balayage = BALAYAGE_LENT;
                     break;
             }
             break;
@@ -181,52 +183,52 @@ void SERVO_machine(enum Evenements e) {
         // Effectue 1 balayage, puis s'arrête:
         case BALAYAGE_1X:
             switch(e) {
-                case TICTAC:
-                    attente++;
-                    if (attente >= retardement) {
-                        attente = 0;
-
-                        position = SERVO_deplace(sens);
-
-                        if (position >= SERVO_MAX) {
-                            sens = -sens;
-                        }
-                        if (position <= SERVO_MIN) {
-                            etat = REPOS;
-                        }
-                    }
+                case E_START:
+                    etat = BALAYAGE;
                     break;
+
+                case E_TICTAC:
+                    if (sens > 0) {
+                        position = SERVO_deplace( balayage);
+                    } else {
+                        position = SERVO_deplace(-balayage);
+                    }
+                    if (position >= SERVO_MAX) {
+                        sens = -1;
+                    }
+                    if (position <= SERVO_MIN) {
+                        etat = REPOS;
+                    }
             }
             break;
 
         // Balaye en continu:
         case BALAYAGE:
             switch(e) {
-                case STOP:
+                case E_STOP:
                     etat = BALAYAGE_1X;
                     break;
 
-                case START:
-                    if (retardement == BALAYAGE_LENT) {
-                        retardement = BALAYAGE_RAPIDE;
+                case E_START:
+                    if (balayage == BALAYAGE_LENT) {
+                        balayage = BALAYAGE_RAPIDE;
                     } else {
-                        retardement = BALAYAGE_LENT;
+                        balayage = BALAYAGE_LENT;
                     }
                     break;
 
-                case TICTAC:
-                    attente++;
-                    if (attente >= retardement) {
-                        attente = 0;
+                case E_TICTAC:
+                    if (sens > 0) {
+                        position = SERVO_deplace(balayage);
+                    } else {
+                        position = SERVO_deplace(-balayage);
+                    }
 
-                        position = SERVO_deplace(sens);
-
-                        if (position >= SERVO_MAX) {
-                            sens = -sens;
-                        }
-                        if (position <= SERVO_MIN) {
-                            sens = -sens;
-                        }
+                    if (position >= SERVO_MAX) {
+                        sens = -1;
+                    }
+                    if (position <= SERVO_MIN) {
+                        sens = 1;
                     }
                     break;
             }
@@ -235,21 +237,32 @@ void SERVO_machine(enum Evenements e) {
 }
 
 /**
+ * Pour que les événements TICTAC s'enchaînent plus lentement.
+ */
+#define DIVISEUR_DE_TEMPS 5;
+
+/**
  * Gère les interruptions.
  */
 void interrupt interruptionsHP() {
+    static unsigned char attente = DIVISEUR_DE_TEMPS;
+
     if (INTCON3bits.INT2IF) {
         INTCON3bits.INT2IF=0;
-        SERVO_machine(STOP);
+        SERVO_machine(E_STOP);
     }
     if (INTCON3bits.INT1IF) {
         INTCON3bits.INT1IF = 0;
-        SERVO_machine(START);
+        SERVO_machine(E_START);
     }
     if (PIR1bits.TMR2IF) {
         PIR1bits.TMR2IF = 0;
         PWM_gereSequence();
-        SERVO_machine(TICTAC);
+        attente--;
+        if (attente == 0) {
+            attente = DIVISEUR_DE_TEMPS;
+            SERVO_machine(E_TICTAC);
+        }
     }
 }
 
