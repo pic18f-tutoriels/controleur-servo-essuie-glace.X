@@ -129,22 +129,22 @@ signed char SERVO_deplace(signed char deplacement) {
  * États pour la machine à états.
  */
 enum Etats {
-    ARRET,
-    BALAYE1,
-    BALAYE
+    REPOS,
+    BALAYAGE_1X,
+    BALAYAGE
 };
 
 /**
  * État actuel de la machine à états.
  */
-enum Etats etat = ARRET;
+enum Etats etat = REPOS;
 
 /**
  * Événements pour la machine à états.
  */
 enum Evenements {
-    EINT0,
-    EINT1,
+    STOP,
+    START,
     TICTAC
 };
 
@@ -162,24 +162,24 @@ void SERVO_machine(enum Evenements e) {
 
     switch(etat) {
         // L'essuie-glace est à l'arrêt:
-        case ARRET:
+        case REPOS:
             switch(e) {
-                case EINT0:
+                case STOP:
                     retardement = BALAYAGE_LENT;
                     sens = 1;
-                    etat = BALAYE1;
+                    etat = BALAYAGE_1X;
                     break;
 
-                case EINT1:
+                case START:
                     retardement = BALAYAGE_LENT;
                     sens = 1;
-                    etat = BALAYE;
+                    etat = BALAYAGE;
                     break;
             }
             break;
 
         // Effectue 1 balayage, puis s'arrête:
-        case BALAYE1:
+        case BALAYAGE_1X:
             switch(e) {
                 case TICTAC:
                     attente++;
@@ -192,7 +192,7 @@ void SERVO_machine(enum Evenements e) {
                             sens = -sens;
                         }
                         if (position <= SERVO_MIN) {
-                            etat = ARRET;
+                            etat = REPOS;
                         }
                     }
                     break;
@@ -200,13 +200,13 @@ void SERVO_machine(enum Evenements e) {
             break;
 
         // Balaye en continu:
-        case BALAYE:
+        case BALAYAGE:
             switch(e) {
-                case EINT0:
-                    etat = BALAYE1;
+                case STOP:
+                    etat = BALAYAGE_1X;
                     break;
 
-                case EINT1:
+                case START:
                     if (retardement == BALAYAGE_LENT) {
                         retardement = BALAYAGE_RAPIDE;
                     } else {
@@ -240,11 +240,11 @@ void SERVO_machine(enum Evenements e) {
 void interrupt interruptionsHP() {
     if (INTCON3bits.INT2IF) {
         INTCON3bits.INT2IF=0;
-        SERVO_machine(EINT0);
+        SERVO_machine(STOP);
     }
     if (INTCON3bits.INT1IF) {
         INTCON3bits.INT1IF = 0;
-        SERVO_machine(EINT1);
+        SERVO_machine(START);
     }
     if (PIR1bits.TMR2IF) {
         PIR1bits.TMR2IF = 0;
