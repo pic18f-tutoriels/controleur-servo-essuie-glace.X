@@ -2,8 +2,8 @@
  * Gère la position d'un servomoteur comme si il s'agissait d'un
  * essuie glace.
  * 
- * INT1: Allume l'essuie-glaces, puis active/désactive le balayage rapide.
- * INT2: Lance 1 balayage, ou arrête l'essuie-glaces.
+ * INT1: Allume l'essuie-glace, puis active/désactive le balayage rapide.
+ * INT2: Lance 1 balayage, ou arrête l'essuie-glace.
  * L'essuie-glace s'arrête toujours au point de repos.
  * 
  * Le signal de contrôle des servomoteurs est difficile à générer, 
@@ -273,7 +273,7 @@ void interrupt interruptionsHP() {
  * Toutes les interruptions sont configurées en haute priorité (Sur le PIC18F, 
  * il n'est pas possible d'activer que les interruptions de basse priorité).
  */
-void initialiseHardware() {
+void PERIPHERIQUES_initialise() {
     ANSELA = 0x00;      // Désactive les convertisseurs A/D.
     ANSELB = 0x00;      // Désactive les convertisseurs A/D.
     ANSELC = 0x00;      // Désactive les convertisseurs A/D.
@@ -320,7 +320,7 @@ void initialiseHardware() {
 void main() {
 
     // Initialise les interruptions et les périphériques:
-    initialiseHardware();
+    PERIPHERIQUES_initialise();
 
     // Initialise le servomoteur au point d'arrêt:
     SERVO_place(SERVO_MIN);
